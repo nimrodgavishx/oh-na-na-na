@@ -524,10 +524,29 @@ async function runQuery(
 
     if (message.type === 'result') {
       resultCount++;
-      const textResult =
-        'result' in message ? (message as { result?: string }).result : null;
+      const resultMsg = message as {
+        result?: string;
+        subtype: string;
+        total_cost_usd?: number;
+        num_turns?: number;
+        duration_ms?: number;
+        usage?: {
+          input_tokens?: number;
+          output_tokens?: number;
+          cache_creation_input_tokens?: number;
+          cache_read_input_tokens?: number;
+        };
+      };
+      const textResult = resultMsg.result ?? null;
+      const u = resultMsg.usage;
+      const costLine = resultMsg.total_cost_usd !== undefined
+        ? ` cost=$${resultMsg.total_cost_usd.toFixed(4)}`
+        : '';
+      const tokenLine = u
+        ? ` in=${u.input_tokens ?? 0} out=${u.output_tokens ?? 0} cache_write=${u.cache_creation_input_tokens ?? 0} cache_read=${u.cache_read_input_tokens ?? 0}`
+        : '';
       log(
-        `Result #${resultCount}: subtype=${message.subtype}${textResult ? ` text=${textResult.slice(0, 200)}` : ''}`,
+        `Result #${resultCount}: subtype=${resultMsg.subtype} turns=${resultMsg.num_turns ?? '?'} duration=${resultMsg.duration_ms ?? '?'}ms${costLine}${tokenLine}${textResult ? ` text=${textResult.slice(0, 200)}` : ''}`,
       );
       writeOutput({
         status: 'success',
